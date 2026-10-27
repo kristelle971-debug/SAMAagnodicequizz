@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CabCall Pro — Simulateur SAMA</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f1117; --surface:#181c27; --surface2:#1e2335; --border:#2a3050;
+  --accent:#4f8ef7; --green:#38d9a9; --red:#ff5f6d; --orange:#ffa94d;
+  --purple:#b197fc; --text:#e8eaf6; --muted:#6b7db3; --white:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* HOME */
+#home{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;background:radial-gradient(ellipse at 30% 20%,#1a2a4a,var(--bg) 60%)}
+.logo{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:20px}
+.home-title{font-size:clamp(32px,5vw,56px);font-weight:800;color:var(--white);text-align:center;margin-bottom:8px}
+.home-title span{color:var(--accent)}
+.home-sub{font-size:14px;color:var(--muted);text-align:center;max-width:460px;margin-bottom:40px;line-height:1.6}
+.scenario-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;width:100%;max-width:860px;margin-bottom:28px}
+.sc-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;cursor:pointer;transition:all .18s;position:relative}
+.sc-card:hover{transform:translateY(-3px)}
+.sc-icon{font-size:26px;margin-bottom:8px}
+.sc-type{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.sc-title{font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px}
+.sc-desc{font-size:11px;color:var(--muted);line-height:1.4}
+.sc-diff{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+.d1{background:rgba(56,217,169,.15);color:var(--green)}
+.d2{background:rgba(255,169,77,.15);color:var(--orange)}
+.d3{background:rgba(255,95,109,.15);color:var(--red)}
+.btn-random{padding:12px 28px;background:var(--accent);color:var(--white);border:none;border-radius:10px;font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-random:hover{background:#3a7ae4;transform:translateY(-2px)}
+
+/* CALL SCREEN */
+#call{display:none;height:100vh;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.back-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer;font-family:'Sora',sans-serif;font-size:12px}
+.caller-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.caller-name{font-size:15px;font-weight:700;color:var(--white)}
+.caller-type{font-size:11px;color:var(--muted)}
+.call-timer{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--green);margin-left:auto}
+.status{display:flex;align-items:center;gap:6px;font-size:12px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.status-dot.off{background:var(--red);animation:none}
+.end-btn{padding:7px 14px;background:rgba(255,95,109,.15);border:1px solid var(--red);color:var(--red);border-radius:8px;cursor:pointer;font-family:'Sora',sans-serif;font-size:12px;font-weight:700}
+
+.call-layout{flex:1;display:grid;grid-template-columns:1fr 290px;overflow:hidden}
+
+/* CHAT */
+.chat-panel{display:flex;flex-direction:column;border-right:1px solid var(--border)}
+.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{display:flex;flex-direction:column;gap:3px;max-width:78%}
+.msg.caller{align-self:flex-start}
+.msg.stagiaire{align-self:flex-end}
+.msg-label{font-size:10px;color:var(--muted);font-weight:700}
+.msg.stagiaire .msg-label{text-align:right}
+.bubble{padding:9px 13px;border-radius:13px;font-size:13px;line-height:1.5}
+.caller .bubble{background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:3px}
+.stagiaire .bubble{background:var(--accent);color:var(--white);border-bottom-right-radius:3px}
+.feedback{font-size:11px;padding:5px 9px;border-radius:7px;margin-top:2px;display:flex;gap:5px;line-height:1.4}
+.fb-good{background:rgba(56,217,169,.1);color:var(--green);border:1px solid rgba(56,217,169,.2)}
+.fb-ok{background:rgba(255,169,77,.1);color:var(--orange);border:1px solid rgba(255,169,77,.2)}
+.fb-bad{background:rgba(255,95,109,.1);color:var(--red);border:1px solid rgba(255,95,109,.2)}
+
+/* SCORE BAR */
+.score-bar{padding:8px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:16px;align-items:center;flex-shrink:0}
+.score-val{font-size:20px;font-weight:800;font-family:'JetBrains Mono',monospace}
+
+/* OPTIONS */
+.options-area{padding:12px 14px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.options-label{font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600}
+.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.opt-btn{padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'Sora',sans-serif;font-size:12px;font-weight:500;cursor:pointer;text-align:left;line-height:1.3;transition:all .15s}
+.opt-btn:hover{border-color:var(--accent);background:#212840;color:var(--white)}
+.opt-btn:disabled{opacity:.35;cursor:default}
+.opt-btn.selected-good{border-color:var(--green);background:rgba(56,217,169,.1);color:var(--green)}
+.opt-btn.selected-ok{border-color:var(--orange);background:rgba(255,169,77,.1);color:var(--orange)}
+.opt-btn.selected-bad{border-color:var(--red);background:rgba(255,95,109,.1);color:var(--red)}
+
+/* SIDE */
+.side{display:flex;flex-direction:column;overflow-y:auto;background:var(--surface)}
+.side-section{padding:14px;border-bottom:1px solid var(--border)}
+.side-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px}
+.info-item{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--surface2);border-radius:6px;margin-bottom:4px;font-size:11px}
+.info-key{color:var(--muted)}
+.info-val{font-weight:700;font-size:10px}
+.info-ok{color:var(--green)}
+.info-miss{color:var(--red)}
+.action-btn{width:100%;padding:8px 11px;border-radius:8px;font-family:'Sora',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text);text-align:left;margin-bottom:5px;transition:all .15s}
+.action-btn:hover{background:var(--accent);color:var(--white);border-color:var(--accent)}
+.action-btn.done{background:rgba(56,217,169,.1);border-color:var(--green);color:var(--green);cursor:default}
+.action-btn.wrong{background:rgba(255,95,109,.1);border-color:var(--red);color:var(--red);cursor:default}
+.kp-item{font-size:11px;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--border);line-height:1.4}
+.kp-item:last-child{border-bottom:none}
+
+/* RESULT */
+#result{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%,#1a2a4a,var(--bg) 70%);padding:40px 20px}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:36px;max-width:580px;width:100%}
+.result-score{font-size:72px;font-weight:800;font-family:'JetBrains Mono',monospace;text-align:center;line-height:1}
+.result-label{text-align:center;font-size:16px;font-weight:700;margin-bottom:28px;margin-top:6px}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.r-item{background:var(--surface2);border-radius:10px;padding:14px}
+.r-item-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.r-item-val{font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.kp-result{padding:9px 13px;border-radius:8px;font-size:13px;margin-bottom:6px;display:flex;gap:8px;line-height:1.4}
+.kp-good{background:rgba(56,217,169,.08);color:var(--green);border:1px solid rgba(56,217,169,.2)}
+.kp-info{background:rgba(79,142,247,.08);color:var(--accent);border:1px solid rgba(79,142,247,.2)}
+.kp-bad{background:rgba(255,95,109,.08);color:var(--red);border:1px solid rgba(255,95,109,.2)}
+.result-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.r-btn{padding:11px 22px;border-radius:10px;font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.r-btn-primary{background:var(--accent);color:var(--white);border:none}
+.r-btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+
+/* NOTIF */
+.notif{position:fixed;top:16px;right:16px;z-index:999;padding:11px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none}
+.notif-good{background:#1a3a2a;border:1px solid var(--green);color:var(--green)}
+.notif-bad{background:#3a1a1a;border:1px solid var(--red);color:var(--red)}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;margin-top:8px}
+.progress-fill{height:100%;border-radius:2px;transition:width .3s}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</head>
+<body>
+
+<div id="notif" class="notif"></div>
+
+<!-- HOME -->
+<div id="home">
+  <div class="logo">Formation SAMA · Simulateur d'appels</div>
+  <h1 class="home-title">CabCall <span>Pro</span></h1>
+  <p class="home-sub">Choisis un scénario. Le patient parle — tu choisis ta réponse parmi les options proposées. Chaque choix est évalué en temps réel.</p>
+  <div class="scenario-grid" id="scenario-grid"></div>
+  <button class="btn-random" onclick="startRandom()">🎲 Appel aléatoire</button>
+</div>
+
+<!-- CALL -->
+<div id="call" style="display:none;flex-direction:column;height:100vh">
+  <div class="topbar">
+    <button class="back-btn" onclick="goHome()">← Raccrocher</button>
+    <div class="caller-avatar" id="avatar"></div>
+    <div>
+      <div class="caller-name" id="caller-name">—</div>
+      <div class="caller-type" id="caller-type">—</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-left:16px" id="status-wrap">
+      <div class="status-dot" id="status-dot" style="animation:blink 1.5s infinite"></div>
+      <span id="status-text">En ligne</span>
+    </div>
+    <div class="call-timer" id="timer" style="margin-left:auto">0:00</div>
+    <button class="end-btn" onclick="endCall()">📵 Terminer</button>
+  </div>
+
+  <div class="call-layout">
+    <div class="chat-panel">
+      <div class="messages" id="messages"></div>
+      <div class="score-bar">
+        <span class="score-val" id="s-good" style="color:var(--green)">0</span>
+        <span style="font-size:11px;color:var(--muted)">✓ bons réflexes</span>
+        <span class="score-val" id="s-ok" style="color:var(--orange);margin-left:12px">0</span>
+        <span style="font-size:11px;color:var(--muted)">⚠ à améliorer</span>
+        <span class="score-val" id="s-bad" style="color:var(--red);margin-left:12px">0</span>
+        <span style="font-size:11px;color:var(--muted)">✗ erreurs</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="step-counter">Étape 0/0</span>
+      </div>
+      <div class="options-area" id="options-area">
+        <div class="options-label">💬 Que dis-tu ?</div>
+        <div class="options-grid" id="options-grid"></div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="side-section">
+        <div class="side-title">📋 Infos collectées</div>
+        <div id="info-panel">
+          <div class="info-item"><span class="info-key">Nom</span><span class="info-val info-miss" id="i-nom">✗ Manquant</span></div>
+          <div class="info-item"><span class="info-key">Prénom</span><span class="info-val info-miss" id="i-prenom">✗ Manquant</span></div>
+          <div class="info-item"><span class="info-key">Date naissance</span><span class="info-val info-miss" id="i-ddn">✗ Manquant</span></div>
+          <div class="info-item"><span class="info-key">Téléphone</span><span class="info-val info-miss" id="i-tel">✗ Manquant</span></div>
+          <div class="info-item"><span class="info-key">Motif</span><span class="info-val info-miss" id="i-motif">✗ Manquant</span></div>
+        </div>
+      </div>
+      <div class="side-section">
+        <div class="side-title">⚡ Action finale</div>
+        <div id="actions-panel">
+          <button class="action-btn" onclick="doAction('rdv')">📅 Prendre un rdv</button>
+          <button class="action-btn" onclick="doAction('modifier')">✏️ Modifier un rdv</button>
+          <button class="action-btn" onclick="doAction('medecin')">🩺 Prévenir le médecin</button>
+          <button class="action-btn" onclick="doAction('urgences')">🚨 Orienter vers le 15</button>
+          <button class="action-btn" onclick="doAction('message')">📝 Prendre un message</button>
+          <button class="action-btn" onclick="doAction('refus')">🚫 Refuser la demande</button>
+        </div>
+      </div>
+      <div class="side-section">
+        <div class="side-title">🎯 Points clés</div>
+        <div id="kp-panel"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 50% 30%,#1a2a4a,#0f1117 70%);padding:40px 20px">
+  <div class="result-card">
+    <div class="result-score" id="r-pct">—</div>
+    <div class="result-label" id="r-label">—</div>
+    <div class="result-grid">
+      <div class="r-item"><div class="r-item-label">Bons réflexes</div><div class="r-item-val" style="color:var(--green)" id="r-good">0</div></div>
+      <div class="r-item"><div class="r-item-label">À améliorer</div><div class="r-item-val" style="color:var(--orange)" id="r-ok">0</div></div>
+      <div class="r-item"><div class="r-item-label">Erreurs</div><div class="r-item-val" style="color:var(--red)" id="r-bad">0</div></div>
+      <div class="r-item"><div class="r-item-label">Durée</div><div class="r-item-val" style="color:var(--accent)" id="r-time">—</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:8px">Points clés du scénario</div>
+    <div id="r-kp"></div>
+    <div id="r-action-result" style="margin-bottom:6px"></div>
+    <div class="result-btns">
+      <button class="r-btn r-btn-secondary" onclick="goHome()">← Choisir un scénario</button>
+      <button class="r-btn r-btn-primary" onclick="startRandom()">🎲 Appel aléatoire</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SCÉNARIOS — arbres de dialogue complets
+// ============================================================
+const SCENARIOS = [
+
+  // ── SCÉNARIO 1 : Patient lambda — renouvellement
+  {
+    id:'lambda1', type:'Patient lambda', icon:'👤', title:'Renouvellement d\'ordonnance',
+    desc:'Patiente habituelle, suivi diabète', difficulty:1,
+    color:'#4f8ef7', bg:'#1a2a4a', actionAttendue:'rdv',
+    keyPoints:['Vérifier l\'identité complète avant tout (DDN obligatoire)','Renouvellement = non urgent, rdv dans la semaine','Toujours noter le numéro de téléphone'],
+    steps:[
+      {
+        caller:"Bonjour madame, c'est Mme JOSEPH, je voudrais renouveler mon ordonnance s'il vous plaît.",
+        options:[
+          {text:"Bonjour Mme JOSEPH. Pouvez-vous me préciser votre prénom et votre date de naissance ?", score:'good', feedback:"Parfait — tu identifies le patient avant tout.", next:1, info:{prenom:true,ddn:true}},
+          {text:"Bonjour ! Oui bien sûr, c'est pour quel médecin ?", score:'ok', feedback:"Tu avances mais tu n'as pas vérifié l'identité.", next:1},
+          {text:"Bonjour, votre nom complet s'il vous plaît ?", score:'ok', feedback:"Bien d'avoir demandé le nom, mais la DDN est indispensable.", next:1, info:{nom:true}},
+          {text:"Oui, c'est noté. Pour quel médicament ?", score:'bad', feedback:"Attention : identité non vérifiée avant de traiter la demande.", next:1},
+        ]
+      },
+      {
+        caller:"C'est Claudette JOSEPH, née le 15 avril 1960. C'est pour mon traitement contre le diabète, la Metformine.",
+        options:[
+          {text:"Merci Mme JOSEPH. Quel est votre numéro de téléphone pour confirmer le rendez-vous ?", score:'good', feedback:"Excellent — tu recueilles toutes les infos nécessaires.", next:2, info:{nom:true,prenom:true,ddn:true,motif:true,tel:false}},
+          {text:"Très bien. Je vous propose mardi à 10h pour un renouvellement, ça vous convient ?", score:'ok', feedback:"Tu poses le rdv mais tu n'as pas noté le téléphone.", next:2, info:{nom:true,prenom:true,ddn:true,motif:true}},
+          {text:"D'accord. Je transmets au médecin, il rappellera.", score:'bad', feedback:"Un renouvellement nécessite un rdv, pas juste un message.", next:2},
+          {text:"C'est noté. Vous êtes disponible quel jour ?", score:'good', feedback:"Bien — tu vérifies les disponibilités avant de proposer.", next:2, info:{nom:true,prenom:true,ddn:true,motif:true}},
+        ]
+      },
+      {
+        caller:"Mon numéro c'est le 0690 33 44 12. Je suis disponible tous les jours sauf mercredi.",
+        options:[
+          {text:"Parfait. Je vous pose un rendez-vous jeudi à 9h30 pour un renouvellement. Je vous envoie la confirmation.", score:'good', feedback:"RDV posé avec toutes les infos — très professionnel.", next:3, info:{tel:true}},
+          {text:"Je note votre numéro. Je vous rappelle dès que j'ai un créneau.", score:'ok', feedback:"Correct, mais il vaut mieux confirmer directement.", next:3, info:{tel:true}},
+          {text:"D'accord mercredi ça vous va ?", score:'bad', feedback:"Elle vient de dire qu'elle n'est pas disponible le mercredi !", next:3, info:{tel:true}},
+          {text:"Je vous propose lundi à 8h30. C'est bon pour vous ?", score:'good', feedback:"Bon réflexe : tu proposes ET tu vérifies.", next:3, info:{tel:true}},
+        ]
+      },
+      {
+        caller:"Jeudi 9h30, c'est parfait. Merci beaucoup madame, au revoir !",
+        options:[
+          {text:"Au revoir Mme JOSEPH, bonne journée !", score:'good', feedback:"Clôture professionnelle et chaleureuse.", next:'end'},
+          {text:"Au revoir !", score:'good', feedback:"Correct.", next:'end'},
+          {text:"OK bye.", score:'bad', feedback:"Trop familier pour un cabinet médical.", next:'end'},
+          {text:"Merci, et n'oubliez pas d'apporter votre carte Vitale.", score:'good', feedback:"Excellent — anticipation utile pour la consultation.", next:'end'},
+        ]
+      }
+    ]
+  },
+
+  // ── SCÉNARIO 2 : Urgence — douleurs thoraciques
+  {
+    id:'urgence1', type:'Urgence médicale', icon:'🚨', title:'Douleurs thoraciques',
+    desc:'Antécédent cardiaque — situation critique', difficulty:3,
+    color:'#ff5f6d', bg:'#3a1a1a', actionAttendue:'urgences',
+    keyPoints:['Ne PAS proposer un rdv — orienter vers le 15 immédiatement','Douleur thoracique + irradiation bras + antécédent = urgence vitale','Rester calme et rassurer pendant que tu agis vite'],
+    steps:[
+      {
+        caller:"Bonjour, j'ai un peu mal à la poitrine ce matin... je voulais voir si je pouvais avoir un rendez-vous...",
+        options:[
+          {text:"Bonjour monsieur. Cette douleur à la poitrine, est-ce qu'elle irradie quelque part — dans le bras, la mâchoire ?", score:'good', feedback:"Excellent réflexe d'évaluation — tu identifies l'urgence.", next:1},
+          {text:"Bonjour. Je peux vous proposer cet après-midi à 14h30.", score:'bad', feedback:"ERREUR GRAVE : douleur thoracique = évaluer avant de poser un rdv.", next:1},
+          {text:"Bonjour. C'est depuis quand cette douleur ?", score:'good', feedback:"Bien — tu qualifies l'urgence avant d'agir.", next:1},
+          {text:"Bonjour. Vous êtes patient du Dr MARTIN ?", score:'ok', feedback:"L'identité est utile mais l'urgence médicale passe en premier.", next:1},
+        ]
+      },
+      {
+        caller:"Oui, ça va dans le bras gauche aussi... J'ai déjà eu un infarctus en 2019, mais bon, ça va sûrement aller...",
+        options:[
+          {text:"Monsieur, avec ce que vous me décrivez et vos antécédents, vous devez appeler le 15 MAINTENANT. Ne conduisez pas. Restez assis.", score:'good', feedback:"PARFAIT. C'est exactement la bonne réaction.", next:2},
+          {text:"D'accord, je vais essayer de vous trouver un créneau urgent aujourd'hui.", score:'bad', feedback:"ERREUR GRAVE : infarctus + douleur irradiante = 15 immédiatement.", next:2},
+          {text:"Je comprends. Pouvez-vous venir au cabinet dans l'heure ?", score:'bad', feedback:"Non — il ne doit PAS conduire ni se déplacer seul.", next:2},
+          {text:"Vu vos antécédents cardiaques, je vous conseille fortement d'appeler le 15 ou le 112 maintenant.", score:'good', feedback:"Très bien — tu identifies le danger et tu agis correctement.", next:2},
+        ]
+      },
+      {
+        caller:"Ah bon, vous pensez que c'est vraiment nécessaire d'appeler le 15 ?",
+        options:[
+          {text:"Oui monsieur, c'est indispensable. Raccrochez et appelez le 15 tout de suite. Je suis là si vous avez besoin.", score:'good', feedback:"Ferme, bienveillant, efficace. Parfait.", next:'end'},
+          {text:"C'est votre décision, mais je vous le conseille fortement.", score:'ok', feedback:"Trop prudent : ici il faut être affirmatif, pas hésitant.", next:'end'},
+          {text:"Oui, je vous en supplie, appelez maintenant. Je note votre numéro pour prévenir le médecin.", score:'good', feedback:"Excellent — tu agis ET tu traces.", next:'end'},
+          {text:"Peut-être, mais si vous préférez attendre un rdv c'est possible aussi.", score:'bad', feedback:"ERREUR GRAVE : ne jamais laisser le choix dans une urgence vitale.", next:'end'},
+        ]
+      }
+    ]
+  },
+
+  // ── SCÉNARIO 3 : Médecin correspondant
+  {
+    id:'medecin1', type:'Médecin correspondant', icon:'🩺', title:'Adressage patient',
+    desc:'Dr Valère, cardiologue — consultation sous 48h', difficulty:2,
+    color:'#b197fc', bg:'#2a1a4a', actionAttendue:'rdv',
+    keyPoints:['Adapter le registre : "Dr Valère" pas "monsieur"','Ne pas demander les détails médicaux — ce n\'est pas ton rôle','Proposer un créneau sous 48h et noter le numéro référent'],
+    steps:[
+      {
+        caller:"Bonjour, ici le Dr VALÈRE, cardiologue à la Polyclinique. Je vous appelle pour adresser une patiente au Dr MARTIN.",
+        options:[
+          {text:"Bonjour Docteur. Je vous écoute, je note les informations.", score:'good', feedback:"Ton juste, tu utilises le titre — professionnel.", next:1},
+          {text:"Bonjour monsieur, c'est pour quel patient ?", score:'ok', feedback:"Correct mais tu aurais dû dire 'Docteur' et non 'monsieur'.", next:1},
+          {text:"Bonjour ! Oui bien sûr, le Dr MARTIN est disponible demain.", score:'bad', feedback:"Tu proposes un créneau avant d'avoir les infos — à l'envers.", next:1},
+          {text:"Bonjour Docteur VALÈRE. Je vous écoute et je transmets au Dr MARTIN.", score:'good', feedback:"Excellent — tu nommes le médecin et tu clarifes le circuit.", next:1},
+        ]
+      },
+      {
+        caller:"Mme ROSETTE Claire, 58 ans, née le 12 juillet 1966. Elle présente des douleurs thoraciques d'effort depuis 2 semaines. Je souhaite un bilan rapide, si possible sous 48h.",
+        options:[
+          {text:"Très bien Docteur. Je note : Mme ROSETTE Claire, DDN 12/07/1966, bilan cardio sous 48h. Quel est votre numéro pour le courrier d'adressage ?", score:'good', feedback:"Parfait — tu notes tout et tu demandes le contact référent.", next:2, info:{nom:true,prenom:true,ddn:true,motif:true}},
+          {text:"D'accord. Quel est exactement son diagnostic ? Elle prend des médicaments ?", score:'bad', feedback:"Ce n'est pas ton rôle de recueillir des infos médicales détaillées.", next:2, info:{nom:true,prenom:true,ddn:true,motif:true}},
+          {text:"Je comprends. Je vais voir les disponibilités du Dr MARTIN et vous rappelle.", score:'ok', feedback:"Correct mais tu n'as pas noté le numéro du médecin référent.", next:2, info:{nom:true,prenom:true,ddn:true,motif:true}},
+          {text:"Notez bien, je vous propose demain à 10h pour Mme ROSETTE.", score:'ok', feedback:"Bien de proposer rapidement, mais tu n'as pas pris le numéro.", next:2, info:{nom:true,prenom:true,ddn:true,motif:true}},
+        ]
+      },
+      {
+        caller:"Mon numéro de cabinet : 0590 33 44 55. Je vous enverrai le courrier d'adressage dans la journée.",
+        options:[
+          {text:"Parfait Docteur, je note le 0590 33 44 55. Je pose le rdv demain à 9h00 pour Mme ROSETTE et je transmets au Dr MARTIN.", score:'good', feedback:"Excellent — contact noté, rdv posé, transmission assurée.", next:'end', info:{tel:true}},
+          {text:"Merci Docteur. Le Dr MARTIN vous rappelle pour confirmer.", score:'ok', feedback:"Correct mais un rdv sous 48h devrait être confirmé maintenant.", next:'end', info:{tel:true}},
+          {text:"Je note. Et son numéro de sécu, vous l'avez ?", score:'bad', feedback:"Hors sujet — le numéro de sécu vient du patient lui-même, pas du médecin référent.", next:'end', info:{tel:true}},
+          {text:"Noté Docteur. Je transmets le dossier d'adressage au Dr MARTIN dès réception.", score:'good', feedback:"Bien — tu confirmes le circuit de transmission.", next:'end', info:{tel:true}},
+        ]
+      }
+    ]
+  },
+
+  // ── SCÉNARIO 4 : Pharmacien
+  {
+    id:'pharma1', type:'Pharmacien', icon:'💊', title:'Ordonnance expirée',
+    desc:'Traitement tensio interrompu — décision urgente', difficulty:2,
+    color:'#38d9a9', bg:'#1a3a2a', actionAttendue:'medecin',
+    keyPoints:['Traitement chronique interrompu = prioritaire (pas dans 3 jours)','Ne pas prendre de décision médicale : alerter le médecin','Proposer un rdv du jour ou prévenir directement le Dr MARTIN'],
+    steps:[
+      {
+        caller:"Bonjour, ici M. BELVAL de la Pharmacie Bel-Air. J'ai Mme DESTIN devant moi avec une ordonnance expirée pour son traitement tensio. Je ne peux pas délivrer sans renouvellement.",
+        options:[
+          {text:"Bonjour M. BELVAL. Je note la situation. Quel est le médicament exactement et depuis quand l'ordonnance est-elle expirée ?", score:'good', feedback:"Bon réflexe : tu qualifies avant d'agir.", next:1},
+          {text:"Bonjour. Je lui propose un rendez-vous jeudi, ça vous va ?", score:'bad', feedback:"Traitement tensio interrompu : jeudi c'est trop tard.", next:1},
+          {text:"Bonjour. Je comprends. Donnez-moi les informations de la patiente.", score:'good', feedback:"Bien — tu recueilles les infos pour agir.", next:1},
+          {text:"Bonjour. Elle doit prendre rendez-vous elle-même.", score:'bad', feedback:"La patiente est à la pharmacie maintenant — besoin d'une réponse immédiate.", next:1},
+        ]
+      },
+      {
+        caller:"C'est l'Amlodipine 5mg, traitement hypertension. L'ordonnance a expiré il y a 3 semaines. La patiente dit qu'elle a arrêté le médicament depuis.",
+        options:[
+          {text:"Compris. Je préviens le Dr MARTIN immédiatement. Donnez-moi le numéro de Mme DESTIN pour qu'il la rappelle dans la journée.", score:'good', feedback:"Parfait — tu alertes le médecin et tu organises le rappel.", next:2, info:{nom:true,motif:true}},
+          {text:"D'accord. Elle peut venir en consultation demain matin à 8h30.", score:'good', feedback:"Bien — un rdv du jour ou du lendemain est adapté ici.", next:2, info:{nom:true,motif:true}},
+          {text:"Je note. Le Dr MARTIN rappellera quand il sera disponible.", score:'ok', feedback:"Trop vague — pour un traitement arrêté, il faut un délai précis.", next:2, info:{nom:true,motif:true}},
+          {text:"Ce n'est pas urgent, elle peut prendre rendez-vous la semaine prochaine.", score:'bad', feedback:"ERREUR : arrêt de traitement tensio = risque cardiovasculaire — c'est urgent.", next:2, info:{nom:true,motif:true}},
+        ]
+      },
+      {
+        caller:"Son numéro c'est le 0690 55 44 33. Elle est encore là, je lui dis quoi ?",
+        options:[
+          {text:"Dites-lui que le médecin la rappelle dans l'heure. Si elle ne reçoit pas d'appel d'ici 12h, elle peut venir directement au cabinet.", score:'good', feedback:"Excellent — tu rassures la patiente ET tu sécurises le suivi.", next:'end', info:{tel:true}},
+          {text:"Dites-lui d'appeler le cabinet elle-même.", score:'bad', feedback:"Elle est déjà en attente d'une réponse — ne la renvois pas dans une boucle.", next:'end', info:{tel:true}},
+          {text:"Dites-lui de revenir demain avec un rdv.", score:'ok', feedback:"Correct mais sans rappel du médecin, c'est incomplet.", next:'end', info:{tel:true}},
+          {text:"Je note son numéro et je reviens vers vous rapidement après avoir parlé au Dr MARTIN.", score:'good', feedback:"Très professionnel — tu fermes la boucle avec le pharmacien.", next:'end', info:{tel:true}},
+        ]
+      }
+    ]
+  },
+
+  // ── SCÉNARIO 5 : Appel suspect
+  {
+    id:'suspect1', type:'Appel suspect', icon:'⚠️', title:'Demande d\'infos douteuse',
+    desc:'Identité floue — cherche à confirmer un rdv', difficulty:3,
+    color:'#ffa94d', bg:'#3a2a1a', actionAttendue:'refus',
+    keyPoints:['Ne jamais confirmer/infirmer qu\'un patient est suivi sans son accord','Proposer que le patient appelle lui-même','Rester bienveillant ET ferme — pas d\'accusation'],
+    steps:[
+      {
+        caller:"Bonjour, j'appelle pour mon père, M. FORTUNÉ. Je voulais juste vérifier s'il a bien son rendez-vous chez vous.",
+        options:[
+          {text:"Bonjour. Pour des raisons de confidentialité, je ne peux pas confirmer les informations d'un patient. Pouvez-vous me donner votre nom ?", score:'good', feedback:"Parfait — bienveillant mais tu appliques la règle RGPD.", next:1},
+          {text:"Bonjour. Oui, M. FORTUNÉ a bien un rendez-vous jeudi.", score:'bad', feedback:"ERREUR GRAVE : tu as confirmé une info patient sans vérification.", next:1},
+          {text:"Bonjour. Vous êtes qui exactement par rapport à M. FORTUNÉ ?", score:'good', feedback:"Bien — tu demandes à identifier l'appelante avant tout.", next:1},
+          {text:"Bonjour. Je vais regarder ça... FORTUNÉ, quel prénom ?", score:'bad', feedback:"Attention : tu t'apprêtes à donner une info sans vérification d'identité.", next:1},
+        ]
+      },
+      {
+        caller:"Je suis sa fille. C'est juste pour savoir s'il a son rdv, pour l'emmener.",
+        options:[
+          {text:"Je comprends votre intention, mais je ne suis pas autorisée à communiquer des informations sur les patients sans leur accord. Pouvez-vous lui demander d'appeler lui-même ?", score:'good', feedback:"Excellent — ferme, clair, et respectueux.", next:2},
+          {text:"D'accord, dans ce cas je peux confirmer qu'il a bien un rdv.", score:'bad', feedback:"ERREUR : 'sa fille' n'est pas une vérification d'identité suffisante.", next:2},
+          {text:"Votre nom de famille s'il vous plaît ?", score:'ok', feedback:"Tu cherches à identifier mais même confirmé, tu ne peux pas divulguer sans accord du patient.", next:2},
+          {text:"Pour protéger les données de votre père, seul lui peut nous demander cette information.", score:'good', feedback:"Parfait — tu expliques la raison sans accuser.", next:2},
+        ]
+      },
+      {
+        caller:"C'est un peu compliqué, il n'entend pas très bien au téléphone...",
+        options:[
+          {text:"Je comprends. Dans ce cas, vous pouvez l'accompagner au cabinet et nous pourrons vérifier ensemble en sa présence.", score:'good', feedback:"Solution parfaite — présence physique du patient = vérification possible.", next:'end'},
+          {text:"Bon, dans ce cas je peux vous confirmer qu'il a un rdv jeudi.", score:'bad', feedback:"ERREUR : la difficulté d'entendre n'autorise pas la divulgation.", next:'end'},
+          {text:"Je comprends. S'il peut dicter son autorisation à quelqu'un, on peut trouver une solution.", score:'good', feedback:"Bien — tu cherches une solution légale et bienveillante.", next:'end'},
+          {text:"Désolée, la règle reste la même. Je ne peux pas communiquer sans son accord direct.", score:'good', feedback:"Ferme et professionnel — même sous pression.", next:'end'},
+        ]
+      }
+    ]
+  },
+
+  // ── SCÉNARIO 6 : Signal faible
+  {
+    id:'lambda2', type:'Patient lambda', icon:'👴', title:'Annulation avec signal faible',
+    desc:'Patient âgé — fièvre cachée dans l\'annulation', difficulty:2,
+    color:'#4f8ef7', bg:'#1a2a4a', actionAttendue:'rdv',
+    keyPoints:['Recueillir le motif d\'annulation — ne pas juste effacer','Détecter le signal : fièvre à 84 ans = voir rapidement','Proposer un rdv rapide, pas un simple report à la semaine'],
+    steps:[
+      {
+        caller:"Allô ? Bonjour madame, c'est M. BONDIEU, je voulais... annuler mon rendez-vous de jeudi.",
+        options:[
+          {text:"Bonjour M. BONDIEU. Bien sûr. Pouvez-vous me dire la raison de l'annulation ?", score:'good', feedback:"Parfait — le motif est obligatoire pour la traçabilité.", next:1, info:{nom:true}},
+          {text:"Bonjour. Je supprime votre rendez-vous de jeudi.", score:'bad', feedback:"Attention : toujours noter le motif d'annulation.", next:1, info:{nom:true}},
+          {text:"Bonjour M. BONDIEU. D'accord. Vous souhaitez un report ?", score:'ok', feedback:"Correct mais tu n'as pas demandé pourquoi il annule.", next:1, info:{nom:true}},
+          {text:"Bonjour. Quel est votre rendez-vous — l'heure exacte ?", score:'good', feedback:"Bien de confirmer l'heure avant d'annuler.", next:1, info:{nom:true}},
+        ]
+      },
+      {
+        caller:"J'ai un peu de fièvre depuis hier soir, je me sens pas très bien. Je voulais reporter à la semaine prochaine.",
+        options:[
+          {text:"Je comprends. Depuis hier soir, c'est combien de fièvre environ ?", score:'good', feedback:"Très bon réflexe — tu qualifies le symptôme avant de reporter.", next:2, info:{motif:true}},
+          {text:"Bien sûr M. BONDIEU, je vous reporte à la semaine prochaine.", score:'bad', feedback:"Attention : fièvre à 84 ans = évaluer avant de reporter à la semaine.", next:2, info:{motif:true}},
+          {text:"D'accord. Reposez-vous bien. Je vous donne un rdv lundi prochain.", score:'bad', feedback:"Sans évaluer la gravité, proposer la semaine prochaine est risqué.", next:2, info:{motif:true}},
+          {text:"Je note. Et cette fièvre, vous avez pris votre température ?", score:'good', feedback:"Bien — tu évalues avant d'agir.", next:2, info:{motif:true}},
+        ]
+      },
+      {
+        caller:"38 degrés 5 depuis hier soir. J'ai pris du Doliprane mais ça redescend pas beaucoup.",
+        options:[
+          {text:"M. BONDIEU, à votre âge une fièvre qui persiste c'est important. Je vous propose un rdv aujourd'hui ou demain plutôt que la semaine prochaine. C'est possible pour vous ?", score:'good', feedback:"PARFAIT — tu détectes le signal faible et tu proposes une solution adaptée.", next:'end', info:{ddn:false}},
+          {text:"D'accord, je vous note pour lundi prochain. Reposez-vous bien.", score:'bad', feedback:"ERREUR : 38,5° persistant à 84 ans ne doit pas attendre une semaine.", next:'end'},
+          {text:"Bien compris. Continuez le Doliprane et venez jeudi prochain.", score:'bad', feedback:"Trop long — tu dois proposer un rdv rapide pour ce profil.", next:'end'},
+          {text:"Je comprends. Vous pouvez venir demain matin à 8h30 ? Le Dr MARTIN vous verra en priorité.", score:'good', feedback:"Excellent — tu agis rapidement et tu rassures le patient.", next:'end'},
+        ]
+      }
+    ]
+  },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let currentScenario = null;
+let currentStep = 0;
+let scores = {good:0, ok:0, bad:0};
+let timerSec = 0;
+let timerInt = null;
+let actionDone = null;
+let callEnded = false;
+let collectedInfo = {nom:false,prenom:false,ddn:false,tel:false,motif:false};
+
+// ============================================================
+// HOME
+// ============================================================
+function renderHome() {
+  const grid = document.getElementById('scenario-grid');
+  const dl = ['','★ Facile','★★ Moyen','★★★ Difficile'];
+  const dc = ['','d1','d2','d3'];
+  grid.innerHTML = SCENARIOS.map(sc => `
+    <div class="sc-card" onclick="startScenario('${sc.id}')"
+      onmouseover="this.style.borderColor='${sc.color}';this.style.boxShadow='0 0 20px ${sc.color}22'"
+      onmouseout="this.style.borderColor='#2a3050';this.style.boxShadow='none'">
+      <span class="sc-diff ${dc[sc.difficulty]}">${dl[sc.difficulty]}</span>
+      <div class="sc-icon">${sc.icon}</div>
+      <div class="sc-type" style="color:${sc.color}">${sc.type}</div>
+      <div class="sc-title">${sc.title}</div>
+      <div class="sc-desc">${sc.desc}</div>
+    </div>`).join('');
+}
+
+function startRandom() {
+  startScenario(SCENARIOS[Math.floor(Math.random()*SCENARIOS.length)].id);
+}
+
+// ============================================================
+// START CALL
+// ============================================================
+function startScenario(id) {
+  currentScenario = SCENARIOS.find(s=>s.id===id);
+  if (!currentScenario) return;
+  currentStep = 0;
+  scores = {good:0,ok:0,bad:0};
+  timerSec = 0;
+  actionDone = null;
+  callEnded = false;
+  collectedInfo = {nom:false,prenom:false,ddn:false,tel:false,motif:false};
+
+  // UI reset
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('s-good').textContent = '0';
+  document.getElementById('s-ok').textContent = '0';
+  document.getElementById('s-bad').textContent = '0';
+  document.getElementById('avatar').textContent = currentScenario.icon;
+  document.getElementById('avatar').style.background = currentScenario.bg;
+  document.getElementById('caller-name').textContent = currentScenario.title;
+  document.getElementById('caller-type').textContent = currentScenario.type;
+  document.getElementById('status-dot').className = 'status-dot';
+  document.getElementById('status-dot').style.animation = 'blink 1.5s infinite';
+  document.getElementById('status-text').textContent = 'En ligne';
+  resetInfoPanel();
+  resetActions();
+
+  // Key points
+  document.getElementById('kp-panel').innerHTML = currentScenario.keyPoints.map(kp =>
+    `<div class="kp-item">• ${kp}</div>`).join('');
+
+  clearInterval(timerInt);
+  timerInt = setInterval(() => {
+    timerSec++;
+    const m = Math.floor(timerSec/60), s = timerSec%60;
+    document.getElementById('timer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  }, 1000);
+
+  showScreen('call');
+  renderStep();
+}
+
+// ============================================================
+// RENDER STEP
+// ============================================================
+function renderStep() {
+  const step = currentScenario.steps[currentStep];
+  if (!step) { endCall(); return; }
+
+  // Update counter
+  document.getElementById('step-counter').textContent =
+    `Étape ${currentStep+1}/${currentScenario.steps.length}`;
+
+  // Add caller message
+  addMsg('caller', step.caller);
+
+  // Render options
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = step.options.map((opt,i) => `
+    <button class="opt-btn" onclick="chooseOption(${i})">${opt.text}</button>
+  `).join('');
+
+  scrollMsgs();
+}
+
+// ============================================================
+// CHOOSE OPTION
+// ============================================================
+function chooseOption(idx) {
+  if (callEnded) return;
+  const step = currentScenario.steps[currentStep];
+  const opt = step.options[idx];
+
+  // Disable all buttons + highlight chosen
+  document.querySelectorAll('.opt-btn').forEach((b,i) => {
+    b.disabled = true;
+    if (i === idx) b.className = `opt-btn selected-${opt.score}`;
+  });
+
+  // Add stagiaire message with feedback
+  addMsg('stagiaire', opt.text, {score:opt.score, text:opt.feedback});
+
+  // Update scores
+  scores[opt.score]++;
+  document.getElementById('s-good').textContent = scores.good;
+  document.getElementById('s-ok').textContent = scores.ok;
+  document.getElementById('s-bad').textContent = scores.bad;
+
+  // Update collected info
+  if (opt.info) {
+    Object.entries(opt.info).forEach(([k,v]) => {
+      if (v) {
+        collectedInfo[k] = true;
+        const el = document.getElementById('i-'+k);
+        if (el) { el.textContent = '✓ Recueilli'; el.className = 'info-val info-ok'; }
+      }
+    });
+  }
+
+  scrollMsgs();
+
+  // Next step
+  setTimeout(() => {
+    if (opt.next === 'end') {
+      endCall();
+    } else {
+      currentStep = opt.next;
+      renderStep();
+    }
+  }, 1200);
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function doAction(action) {
+  if (callEnded || actionDone) return;
+  actionDone = action;
+  const correct = action === currentScenario.actionAttendue;
+  document.querySelectorAll('.action-btn').forEach(b => {
+    const a = b.getAttribute('onclick').match(/'(\w+)'/)?.[1];
+    if (a === action) b.className = 'action-btn ' + (correct ? 'done' : 'wrong');
+    else if (a === currentScenario.actionAttendue && !correct) b.className = 'action-btn done';
+  });
+  scores[correct ? 'good' : 'bad']++;
+  document.getElementById('s-good').textContent = scores.good;
+  document.getElementById('s-bad').textContent = scores.bad;
+  showNotif(correct ? '✓ Bonne action !' : '✗ Ce n\'est pas l\'action adaptée ici', correct ? 'good' : 'bad');
+}
+
+// ============================================================
+// END + RESULT
+// ============================================================
+function endCall() {
+  if (callEnded) return;
+  callEnded = true;
+  clearInterval(timerInt);
+  document.getElementById('status-dot').className = 'status-dot off';
+  document.getElementById('status-dot').style.animation = 'none';
+  document.getElementById('status-text').textContent = 'Terminé';
+  document.getElementById('options-grid').innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:13px;padding:12px">📵 Appel terminé</div>`;
+
+  setTimeout(() => {
+    const total = scores.good + scores.ok + scores.bad;
+    const pct = total > 0 ? Math.round(scores.good/total*100) : 0;
+    const color = pct>=80?'var(--green)':pct>=60?'var(--orange)':'var(--red)';
+    const label = pct>=80?'Excellent — Réflexes professionnels maîtrisés':pct>=60?'Bien — Quelques points à consolider':'À retravailler — Reprends les règles clés';
+    const m = Math.floor(timerSec/60), s = timerSec%60;
+
+    document.getElementById('r-pct').textContent = pct+'%';
+    document.getElementById('r-pct').style.color = color;
+    document.getElementById('r-label').textContent = label;
+    document.getElementById('r-label').style.color = color;
+    document.getElementById('r-good').textContent = scores.good;
+    document.getElementById('r-ok').textContent = scores.ok;
+    document.getElementById('r-bad').textContent = scores.bad;
+    document.getElementById('r-time').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+
+    document.getElementById('r-kp').innerHTML = currentScenario.keyPoints.map((kp,i) =>
+      `<div class="kp-result kp-info"><span>📌</span><span>${kp}</span></div>`).join('');
+
+    const actionOk = actionDone === currentScenario.actionAttendue;
+    document.getElementById('r-action-result').innerHTML = `
+      <div class="kp-result ${actionOk?'kp-good':'kp-bad'}">
+        <span>${actionOk?'✓':'✗'}</span>
+        <span>Action finale : ${actionOk?'correcte !':'incorrecte — attendue : '+getActionLabel(currentScenario.actionAttendue)}</span>
+      </div>`;
+
+    showScreen('result');
+  }, 800);
+}
+
+function getActionLabel(a) {
+  return {rdv:'Prendre un rdv',modifier:'Modifier un rdv',medecin:'Prévenir le médecin',urgences:'Orienter vers le 15',message:'Prendre un message',refus:'Refuser la demande'}[a]||a;
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function addMsg(role, text, feedback=null) {
+  const c = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const label = role === 'caller' ? currentScenario.type : 'Vous (secrétaire)';
+  let html = `<div class="msg-label">${label}</div><div class="bubble">${text}</div>`;
+  if (feedback) {
+    const icon = feedback.score==='good'?'✓':feedback.score==='ok'?'⚠':'✗';
+    html += `<div class="feedback fb-${feedback.score}"><span>${icon}</span><span>${feedback.text}</span></div>`;
+  }
+  div.innerHTML = html;
+  c.appendChild(div);
+  scrollMsgs();
+}
+
+function scrollMsgs() {
+  const c = document.getElementById('messages');
+  setTimeout(()=>c.scrollTop=c.scrollHeight, 50);
+}
+
+function resetInfoPanel() {
+  ['nom','prenom','ddn','tel','motif'].forEach(k => {
+    const el = document.getElementById('i-'+k);
+    if (el) { el.textContent = '✗ Manquant'; el.className = 'info-val info-miss'; }
+  });
+}
+
+function resetActions() {
+  document.querySelectorAll('.action-btn').forEach(b => b.className = 'action-btn');
+}
+
+function showScreen(name) {
+  ['home','call','result'].forEach(n => {
+    const el = document.getElementById(n);
+    if (n === name) {
+      el.style.display = n==='call'?'flex':'flex';
+      if (n==='result'){el.style.flexDirection='column';el.style.alignItems='center';el.style.justifyContent='center';}
+      if (n==='call'){el.style.flexDirection='column';el.style.height='100vh';}
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
+function goHome() {
+  clearInterval(timerInt);
+  showScreen('home');
+}
+
+function showNotif(msg, type) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.className = `notif notif-${type}`;
+  n.style.display = 'block';
+  setTimeout(()=>n.style.display='none', 2500);
+}
+
+// INIT
+renderHome();
+</script>
+</body>
+</html>
